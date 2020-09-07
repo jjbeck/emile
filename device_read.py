@@ -150,26 +150,19 @@ class connect_devices():
 
             try:
                 if hfd_or_chow == "CHOW":
-                    for file in glob.glob(self.config_param['main_path'] + "/*.csv"):
-                        shutil.move(self.config_param['main_path'] + file, self.config_param['transfer_path'])
                     ser.write(config_params['CHOW protocol'][FED_prot].encode('utf-8'))
                     FED_prot += 1
                 else:
-                    for file in glob.glob(self.config_param['main_path'] + "/*.csv"):
-                        shutil.move(self.config_param['main_path'] + file, self.config_param['transfer_path'])
                     ser.write(config_params['HFD protocol'][FED_prot].encode('utf-8'))
                     FED_prot += 1
             except IndexError:
                 print("Done with all FED protocols. Exiting")
                 if ser1_or_ser2 == "ser1":
                     self.ser1.close()
-                    subprocess.run("echo 1nickhong123| sudo rfcomm release rfcomm0", shell=True)
-                    self.thread1.join()
-                    sys.exit()
-                else:
-                    self.ser2.close()
+                    for file in glob.glob(self.config_param['main_path'] + "*.csv"):
+                        shutil.move(file, self.config_param['transfer_path'])
                     subprocess.run("echo 1nickhong123| sudo rfcomm release rfcomm1", shell=True)
-                    self.thread2.join()
+                    self.thread1.join()
                     sys.exit()
 
 
