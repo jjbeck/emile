@@ -7,14 +7,16 @@ import sys
 import yaml
 import time
 from datetime import datetime
+from datetime import date
 import live_plot
 import subprocess
 import shutil
 import glob
+import smtplib, ssl
 
 def read_config(config_path):
     try:
-        with open('/home/jordan/Desktop/nih_mice_beh/config.yaml', 'r') as file:
+        with open(config_path, 'r') as file:
             cfg = yaml.load(file, Loader=yaml.FullLoader)
             exp_num = []
             for key in cfg:
@@ -34,6 +36,17 @@ def write_config(config_path):
 class connect_devices():
 
     def __init__(self,file_save_path, weigh_devices, config_param, experiment_number):
+
+        self.port = 465  # For SSL
+        self.smtp_server = "smtp.gmail.com"
+        self.sender_email = "krashlabfed@gmail.com"  # Enter your address
+        self.receiver_email1 = "jordan_becker@brown.edu"  # Enter receiver address
+        self.receiver_email2 = "amysutto@gmail.com"
+        self.password = "krasheslab"
+        self.message = """\
+        Subject: FED jammed
+
+        This message is sent from a Krashes FED device."""
 
         self.config_param = config_param
         self.experiment_number = experiment_number
@@ -92,6 +105,12 @@ class connect_devices():
                         self.thread3.setDaemon(True)
                         self.thread3.start()
                     i += 1
+                if "20 motor rotations" in line:
+                    context = ssl.create_default_context()
+                    with smtplib.SMTP_SSL(self.smtp_server, self.port, context=context) as server:
+                        server.login(self.sender_email, self.password)
+                        server.sendmail(self.sender_email, self.receiver_email1, self.message)
+                        server.sendmail(self.sender_email, self.receiver_email2, self.message)
                 if 'MM:DD:YYYY' in line:
                     header = self.save_data.universal_header(line)
                     self.save_data.ser1_df(header)
@@ -110,16 +129,22 @@ class connect_devices():
             if '1.1.44' in line and self.i == 0:
                 self.ser2_file_name = self.save_data.get_filename_paradigm(line, filen_name, self.experiment_number)
                 if 'HFD' in self.ser2_file_name:
-                    self.thread4 = threading.Thread(target=self.rasp_pi_monitor, args=(self.config_param[self.experiment], 'HFD', self.ser2_file_name, self.ser2, "ser2", ))
+                    self.thread4 = threading.Thread(target=self.rasp_pi_monitor, args=(self.config_param[self.experiment], 'HFD', self.ser2, "ser2", ))
                     self.thread4.setDaemon(True)
                     self.thread4.start()
                     print("HFD")
                 else:
-                    self.thread4 = threading.Thread(target=self.rasp_pi_monitor, args=(self.config_param[self.experiment], 'CHOW',self.ser2_file_name, self.ser2, "ser2", ))
+                    self.thread4 = threading.Thread(target=self.rasp_pi_monitor, args=(self.config_param[self.experiment], 'CHOW', self.ser2, "ser2", ))
                     self.thread4.setDaemon(True)
                     self.thread4.start()
                     print("CHOW")
                 self.i += 1
+            if "20 motor rotations" in line:
+                context = ssl.create_default_context()
+                with smtplib.SMTP_SSL(self.smtp_server, self.port, context=context) as server:
+                    server.login(self.sender_email, self.password)
+                    server.sendmail(self.sender_email, self.receiver_email1, self.message)
+                    server.sendmail(self.sender_email, self.receiver_email2, self.message)
             if 'MM:DD:YYYY' in line:
                 header = self.save_data.universal_header(line)
                 self.save_data.ser2_df(header)
