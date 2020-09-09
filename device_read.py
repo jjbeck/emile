@@ -6,7 +6,7 @@ import device_connect
 import sys
 import yaml
 import time
-from datetime import date
+from datetime import datetime
 import live_plot
 import subprocess
 import shutil
@@ -146,24 +146,28 @@ class connect_devices():
         FED_prot = 0
 
         while True:
-            time.sleep(3)
-
-            try:
-                if hfd_or_chow == "CHOW":
-                    ser.write(config_params['CHOW protocol'][FED_prot].encode('utf-8'))
-                    FED_prot += 1
-                else:
-                    ser.write(config_params['HFD protocol'][FED_prot].encode('utf-8'))
-                    FED_prot += 1
-            except IndexError:
-                print("Done with all FED protocols. Exiting")
-                if ser1_or_ser2 == "ser1":
-                    self.ser1.close()
-                    for file in glob.glob(self.config_param['main_path'] + "*.csv"):
-                        shutil.move(file, self.config_param['transfer_path'])
-                    subprocess.run("echo 1nickhong123| sudo rfcomm release rfcomm1", shell=True)
-                    self.thread1.join()
-                    sys.exit()
+            tm = datetime.now()
+            tm_min = tm.minute
+            tm_hour = tm.hour
+            if tm_hour == 11 and tm_min == 45:
+                try:
+                    if hfd_or_chow == "CHOW":
+                        ser.write(config_params['CHOW protocol'][FED_prot].encode('utf-8'))
+                        FED_prot += 1
+                        time.sleep(80)
+                    else:
+                        ser.write(config_params['HFD protocol'][FED_prot].encode('utf-8'))
+                        FED_prot += 1
+                        time.sleep(80)
+                except IndexError:
+                    print("Done with all FED protocols. Exiting")
+                    if ser1_or_ser2 == "ser1":
+                        self.ser1.close()
+                        for file in glob.glob(self.config_param['main_path'] + "*.csv"):
+                            shutil.move(file, self.config_param['transfer_path'])
+                        subprocess.run("echo 1nickhong123| sudo rfcomm release rfcomm1", shell=True)
+                        self.thread1.join()
+                        sys.exit()
 
 
 
